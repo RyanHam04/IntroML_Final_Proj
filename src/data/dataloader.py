@@ -1,10 +1,9 @@
-import os
 import pandas as pd
 
 
-FILENAME = "heart_failure_clinical_records_dataset.csv"
+FILENAME = "src/data/heart_failure_clinical_records_dataset.csv"
 
-def load_dataset(file_name: str) -> pd.DataFrame:
+def load_dataset(file_name: str = FILENAME) -> pd.DataFrame:
     df = pd.read_csv(file_name)
     return df
 
