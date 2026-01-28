@@ -13,5 +13,7 @@ class Experiment:
 
 EXPERIMENTS = [
     Experiment(id="baseline-lr", model="logreg", config=logreg.Config(), k=5),
-    Experiment(id="xgb-k=10", model="xgb", config=xgb.Config(), k=10),
+    Experiment(
+        id="xgb-k=10_max-depth=2", model="xgb", config=xgb.Config(max_depth=2), k=10
+    ),
 ]
