@@ -1,48 +1,47 @@
-from data import dataloader
-from preprocess import preprocess
-
+from sklearn.pipeline import Pipeline
+from sklearn.model_selection import StratifiedKFold, cross_validate
 from sklearn.metrics import accuracy_score
+from typing import List
+from data import load_dataset, split_data, kfold_data
+from experiment import Experiment, EXPERIMENTS
+from model import xgb, logreg
+from pprint import pprint
 
 
-def baseline(data):
-    "Runs a baseline Logistic Regression Model"
-    from model.logreg import Config, build_pipeline
-
-    cfg = Config()
-    lr = build_pipeline("logreg_base_config", cfg)
-    lr.fit(data["X_train"], data["y_train"])
-    iterations = lr.named_steps["model"].n_iter_[0]
-    yhat = lr.predict(data["X_val"])
-
-    print("------------BASELINE LOGREG-------------")
-    print(f"Iterations needed to converge: {iterations}")
-    print(data["y_val"].value_counts())
-    print(f"Accuracy: {accuracy_score(data['y_val'], yhat)}")
+def load_data():
+    "Loads data"
+    df = load_dataset()
+    return split_data(df, 0.7, 0.2, 0.1)
 
 
-def xgb(data):
-    from model.xgb import Config, build_pipeline
+def k_fold_cv(p: Pipeline, k: int, data):
+    data = kfold_data(data)
+    cv = StratifiedKFold(n_splits=k)  # Ensuring each fold has proper proportions
+    return cross_validate(
+        p,
+        data["X_train"],
+        data["y_train"],
+        cv=cv,
+        scoring=["accuracy", "precision", "recall", "f1", "roc_auc"],
+    )
 
-    """
-    We probably should give each run a unique name? 
-    Regardless, I added the `run` attribute    
-    """
 
-    cfg = Config()
-    xgb = build_pipeline("xgb_default_idk", cfg)
-    xgb.fit(data["X_train"], data["y_train"])
-    yhat = xgb.predict(data["X_val"])
+def run_experiments(experiments: List[Experiment], data):
+    scores = None
+    for exp in experiments:
+        if exp.model == "logreg":
+            model = logreg.build_pipeline(exp.id, exp.config)
+            scores = k_fold_cv(model, exp.k, data)
+        elif exp.model == "xgb":
+            model = xgb.build_pipeline(exp.id, exp.config)
+            scores = k_fold_cv(model, exp.k, data)
 
-    print(f"-----------XGB {xgb.run}-------------")
-    print(data["y_val"].value_counts())
-    print(f"Accuracy: {accuracy_score(data['y_val'], yhat)}")
+        pprint(f"------------{exp.id}----------------- \n {scores}")
 
 
 def main():
-    df = dataloader.load_dataset()
-    data = preprocess.split_data(df, 0.7, 0.2, 0.1)
-    baseline(data)
-    xgb(data)
+    data = load_data()
+    run_experiments(EXPERIMENTS, data)
 
 
 if __name__ == "__main__":

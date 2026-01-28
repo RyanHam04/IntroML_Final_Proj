@@ -1,3 +1,4 @@
+from sklearn.model_selection import StratifiedKFold, cross_validate
 from xgboost import XGBClassifier
 from dataclasses import dataclass
 from sklearn.pipeline import Pipeline
@@ -20,8 +21,10 @@ class Config:
 
 
 def build_pipeline(id: str, cfg: Config):
-    p = Pipeline(steps=[("scaler", StandardScaler()), (id, XGBClassifier(**vars(cfg)))])
-    p.run = id
+    p = Pipeline(
+        steps=[("scaler", StandardScaler()), ("model", XGBClassifier(**vars(cfg)))]
+    )
+    p.id = id
     return p
 
 

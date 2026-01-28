@@ -19,7 +19,7 @@ def build_pipeline(id: str, cfg: Config):
     p = Pipeline(
         steps=[("scaler", StandardScaler()), ("model", LogisticRegression(**vars(cfg)))]
     )
-    p.name = id
+    p.id = id
     return p
 
 
