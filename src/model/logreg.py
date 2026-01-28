@@ -1,6 +1,7 @@
-import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from dataclasses import dataclass
+from sklearn.pipeline import Pipeline
+from sklearn.preprocessing import StandardScaler
 
 
 @dataclass
@@ -10,25 +11,17 @@ class Config:
     Defaults are just placeholders
     """
 
-    max_iter: int = 5000
+    max_iter: int = 100
     class_weight: str = "balanced"  # As labels are imbalanced (2:1)
 
 
-class Model:
-    def __init__(self, cfg):
-        self.cfg: Config = cfg
-        self.model: LogisticRegression = self.build_model()
-
-    def build_model(self) -> LogisticRegression:
-        return LogisticRegression(**vars(self.cfg))
-
-    def fit(self, X: pd.DataFrame, y: pd.DataFrame):
-        self.model.fit(X, y)
-
-    def predict(self, X: pd.DataFrame):
-        return self.model.predict(X)
+def build_pipeline(id: str, cfg: Config):
+    p = Pipeline(
+        steps=[("scaler", StandardScaler()), ("model", LogisticRegression(**vars(cfg)))]
+    )
+    p.name = id
+    return p
 
 
 if __name__ == "__main__":
-    conf1 = Config()
-    Model(cfg=conf1)
+    pass
