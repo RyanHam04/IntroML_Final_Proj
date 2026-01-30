@@ -2,20 +2,25 @@ from xgboost import XGBClassifier
 from model import xgb
 from sklearn.model_selection import GridSearchCV
 from pprint import pprint
+from sklearn.metrics import make_scorer, precision_score
+from sklearn.model_selection import StratifiedKFold
 
 
 param_grid = {
-    "model__max_depth": [],
-    "model__min_child_weight": [],
-    "model__subsample": [],
-    "model__colsample_bytree": [],
-    "model__learning_rate": [],
+    "model__max_depth": [i * 2 for i in range(1, 6)],
+    "model__min_child_weight": [i * 2 for i in range(1, 6)],
+    "model__subsample": [0.2 * i for i in range(1, 6)],
+    "model__colsample_bytree": [0.2 * i for i in range(1, 6)],
+    "model__learning_rate": [0.01, 0.03, 0.1, 0.3],
 }
 
 
 def get_metrics(results, best_idx):
-    print(results)
     return {
+        "accuracy_mean": results["mean_test_accuracy"][best_idx],
+        "accuracy_std": results["std_test_accuracy"][best_idx],
+        "precision_mean": results["mean_test_precision"][best_idx],
+        "precision_std": results["std_test_precision"][best_idx],
         "recall_mean": results["mean_test_recall"][best_idx],
         "recall_std": results["std_test_recall"][best_idx],
         "roc_auc_mean": results["mean_test_roc_auc"][best_idx],
@@ -26,15 +31,23 @@ def get_metrics(results, best_idx):
 
 
 def finetune(data) -> XGBClassifier:
-    # finetunes the model using the parameters, prioritizes recall
     p = xgb.build_pipeline()
+    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     grid = GridSearchCV(
         estimator=p,
         param_grid=param_grid,
-        scoring={"f1": "f1", "recall": "recall", "roc_auc": "roc_auc"},
-        refit="recall",
-        cv=5,
+        scoring={
+            "accuracy": "accuracy",
+            # This adjustment is needed to prevent div_by_0 errors
+            "precision": make_scorer(precision_score, zero_division=0),
+            "recall": "recall",
+            "f1": "f1",
+            "roc_auc": "roc_auc",
+        },
+        refit="recall",  # As we optimize for recall, might change to roc_auc though
+        cv=cv,
         n_jobs=-1,  # Uses all cpu cores
+        verbose=0,
     )
 
     grid.fit(data["X_train"], data["y_train"])

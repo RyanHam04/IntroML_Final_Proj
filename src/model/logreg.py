@@ -1,7 +1,7 @@
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import cross_val_predict, KFold
+from sklearn.model_selection import cross_val_predict, StratifiedKFold
 from data import kfold_data
 
 from sklearn.metrics import (
@@ -52,8 +52,7 @@ def run_baseline(data, cv_splits=5):
 
     cv_data = kfold_data(data)
 
-    kf = KFold(n_splits=cv_splits, shuffle=True, random_state=42)
-    p = build_pipeline()
+    kf = StratifiedKFold(n_splits=cv_splits, shuffle=True, random_state=42)
 
     y_cv_pred = cross_val_predict(p, cv_data["X_train"], cv_data["y_train"], cv=kf)
     y_cv_proba = cross_val_predict(
