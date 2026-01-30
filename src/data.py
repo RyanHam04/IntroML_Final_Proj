@@ -6,6 +6,7 @@ from typing import Dict
 FILENAME = "src/heart_failure_clinical_records_dataset.csv"
 LABEL_COL = "DEATH_EVENT"
 
+
 def load_dataset(file_name: str = FILENAME) -> pd.DataFrame:
     """
     Loads the data from the specified file path as a
@@ -14,32 +15,29 @@ def load_dataset(file_name: str = FILENAME) -> pd.DataFrame:
     df = pd.read_csv(file_name)
     return df
 
-def validate_dataset(df: pd.DataFrame)-> None:
+
+def validate_dataset(df: pd.DataFrame) -> None:
     """
     Validating that the dataset has the expected structure.
     Raise validation errors if validation fails.
     """
     if df.empty:
         raise ValueError("Datadset is empty")
-    
+
     if LABEL_COL not in df.columns:
         raise ValueError(f"Missing label column: {LABEL_COL}")
-    
+
     if df[LABEL_COL].nunique() != 2:
         raise ValueError("Label column is not binary.")
 
     if df.isnull().any().any():
         print("Warning: Dataset contains missing values.")
-    
+
     non_numeric_cols = (
-        df.drop(LABEL_COL, axis=1)
-          .select_dtypes(exclude="number")
-          .columns
+        df.drop(LABEL_COL, axis=1).select_dtypes(exclude="number").columns
     )
     if len(non_numeric_cols) > 0:
-        raise ValueError(
-            f"Non-numeric feature columns found: {list(non_numeric_cols)}"
-        )
+        raise ValueError(f"Non-numeric feature columns found: {list(non_numeric_cols)}")
 
     if df.isnull().any().any():
         print("Warning: Dataset contains missing values.")
