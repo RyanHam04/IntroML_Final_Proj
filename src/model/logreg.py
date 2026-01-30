@@ -1,7 +1,7 @@
 from sklearn.linear_model import LogisticRegression
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import cross_val_predict, StratifiedKFold
+from sklearn.model_selection import cross_validate, StratifiedKFold
 from data import kfold_data
 
 from sklearn.metrics import (
@@ -9,8 +9,7 @@ from sklearn.metrics import (
     recall_score,
     precision_score,
     roc_auc_score,
-    precision_recall_curve,
-    auc,
+    accuracy_score,
 )
 
 
@@ -20,18 +19,18 @@ def build_pipeline():
 
 
 def evaluate(y, yhat, y_proba):
+    accuracy = accuracy_score(y, yhat)
     f1 = f1_score(y, yhat)
     recall = recall_score(y, yhat)
     precision = precision_score(y, yhat)
     roc = roc_auc_score(y, y_proba)
-    precision_curve, recall_curve, _ = precision_recall_curve(y, y_proba)
-    pr_auc = auc(recall_curve, precision_curve)
 
     print(f"""
-            F1 Score: {f1:.4f}
-            Precision: {precision:.4f}
-            Recall: {recall:.4f}
-            ROC-AUC: {roc:.4f}
+accuracy: {accuracy:.4f}
+precision: {precision:.4f}
+f1 score: {f1:.4f}
+recall: {recall:.4f}
+roc-auc: {roc:.4f}
             """)
 
 
@@ -50,17 +49,33 @@ def run_baseline(data, cv_splits=5):
     print("-----------LogReg Baseline [Normal]--------------")
     evaluate(data["y_val"], yval_pred, yval_proba)
 
+    # K - Fold
+
     cv_data = kfold_data(data)
 
     kf = StratifiedKFold(n_splits=cv_splits, shuffle=True, random_state=42)
+    scoring = {
+        "accuracy": "accuracy",
+        "precision": "precision",
+        "f1": "f1",
+        "recall": "recall",
+        "roc_auc": "roc_auc",
+    }
 
-    y_cv_pred = cross_val_predict(p, cv_data["X_train"], cv_data["y_train"], cv=kf)
-    y_cv_proba = cross_val_predict(
-        p, cv_data["X_train"], cv_data["y_train"], cv=kf, method="predict_proba"
-    )[:, 1]
+    cv_results = cross_validate(
+        p,
+        cv_data["X_train"],
+        cv_data["y_train"],
+        cv=kf,
+        scoring=scoring,
+        return_train_score=False,
+    )
 
     print(f"--------LogReg Baseline [K-fold (k={cv_splits})]---------")
-    evaluate(cv_data["y_train"], y_cv_pred, y_cv_proba)
+
+    for metric in scoring.keys():
+        scores = cv_results[f"test_{metric}"]
+        print(f"{metric}: {scores.mean():.4f} ± {scores.std():.4f}")
 
 
 if __name__ == "__main__":
