@@ -3,14 +3,7 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import StandardScaler
 from sklearn.model_selection import cross_validate, StratifiedKFold
 from data import kfold_data
-
-from sklearn.metrics import (
-    f1_score,
-    recall_score,
-    precision_score,
-    roc_auc_score,
-    accuracy_score,
-)
+from evaluate import evaluate
 
 
 def build_pipeline():
@@ -18,23 +11,7 @@ def build_pipeline():
     return p
 
 
-def evaluate(y, yhat, y_proba):
-    accuracy = accuracy_score(y, yhat)
-    f1 = f1_score(y, yhat)
-    recall = recall_score(y, yhat)
-    precision = precision_score(y, yhat)
-    roc = roc_auc_score(y, y_proba)
-
-    print(f"""
-accuracy: {accuracy:.4f}
-precision: {precision:.4f}
-f1 score: {f1:.4f}
-recall: {recall:.4f}
-roc-auc: {roc:.4f}
-            """)
-
-
-def run_baseline(data, cv_splits=5):
+def run_baseline(data):
     """
     Runs baseline LR on both the train/val/test set
     as well as a K-fold baseline LR
@@ -48,18 +25,20 @@ def run_baseline(data, cv_splits=5):
 
     print("-----------LogReg Baseline [Normal]--------------")
     evaluate(data["y_val"], yval_pred, yval_proba)
+    return p
 
-    # K - Fold
 
+def run_baseline_cv(data, cv_splits=5):
+    p = build_pipeline()
     cv_data = kfold_data(data)
 
     kf = StratifiedKFold(n_splits=cv_splits, shuffle=True, random_state=42)
     scoring = {
         "accuracy": "accuracy",
         "precision": "precision",
-        "f1": "f1",
         "recall": "recall",
-        "roc_auc": "roc_auc",
+        "f1": "f1",
+        "pr_auc": "average_precision",
     }
 
     cv_results = cross_validate(
@@ -76,6 +55,8 @@ def run_baseline(data, cv_splits=5):
     for metric in scoring.keys():
         scores = cv_results[f"test_{metric}"]
         print(f"{metric}: {scores.mean():.4f} ± {scores.std():.4f}")
+
+    return p
 
 
 if __name__ == "__main__":
