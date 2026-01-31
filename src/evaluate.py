@@ -5,6 +5,7 @@ from sklearn.metrics import (
     precision_score,
     accuracy_score,
 )
+from graphics import graphs
 
 
 def evaluate(y_true, y_pred, y_proba=None):
@@ -31,6 +32,7 @@ def evaluate_on_test(model, data, name):
     y_proba = None
     if hasattr(model, "predict_proba"):
         y_proba = model.predict_proba(X_test)[:, 1]
+        graphs.plot_pr_curve(y_test, y_proba)
 
     print(f"----------- {name} [Test Set] -----------")
     evaluate(y_test, y_pred, y_proba)
